@@ -26,13 +26,17 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
 
 function sensortest(){
 
-
+// Updated sensordata format
 const sensordata = {
   id: 0,
   name: "temperaturesensor",
   address: "221 Burwood Hwy, Burwood VIC 3125",
-  time: Date.now(),
-  temperature: 20.00
+  data: [
+    {
+      time: Date.now(),
+      temperature: 20.00
+    }
+  ]
 }
 
 console.log(JSON.stringify(sensordata));
@@ -40,11 +44,17 @@ console.log(JSON.stringify(sensordata));
 // Push data for Plotly
 
 parser.on('data', data => {
-  sensordata.temperature = parseFloat(data);
-  console.log(sensordata.temperature);
+  
+  // Update sensordata with new temperature value
+  sensordata.data.push({
+    time: Date.now(),
+    temperature: parseFloat(data)
+  });
+  
+  console.log(sensordata.data[sensordata.data.length - 1].temperature);
   
   plotlyData.x.push((new Date()).toISOString());
-  plotlyData.y.push(sensordata.temperature);
+  plotlyData.y.push(sensordata.data[sensordata.data.length - 1].temperature);
   
   const graphOptions = {
     filename: "iot-performance",
@@ -55,20 +65,17 @@ parser.on('data', data => {
     console.log(msg);
   });
 
-  const newSensor = new Sensor({
-    id: sensordata.id,
-    name: sensordata.name,
-    address: sensordata.address,
-    time: sensordata.time,
-    temperature: sensordata.temperature
-  });
-
-  newSensor.save()
-    .then(doc => {
-      console.log(doc);
-    })
-    .catch(error => {
-      console.error(error);
-    });
-  })
+// Update existing sensor document in MongoDB or create a new one if it doesn't exist
+Sensor.findOneAndUpdate(
+    { id: sensordata.id },
+    { $push: { data: sensordata.data[sensordata.data.length - 1] } },
+    { new: true, upsert: true }
+)
+.then(doc => {
+    console.log(doc);
+})
+.catch(error => {
+    console.error(error);
+});
+})
 }
