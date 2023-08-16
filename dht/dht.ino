@@ -8,7 +8,6 @@ DHT dht(DHTPIN, DHTTYPE); //// Initialize DHT sensor for normal 16mhz Arduino
 
 
 //Variables
-int chk;
 float hum;  //Stores humidity value
 float temp; //Stores temperature value
 
